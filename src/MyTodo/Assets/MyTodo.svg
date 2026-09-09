@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- 透明背景；两个几何色块组成勾形。 -->
+  <polygon points="8,126 58,76 119,137 69,187" fill="#087F65"/>
+  <polygon points="69,187 119,137 211,45 248,82 101,229" fill="#22C79A"/>
+</svg>

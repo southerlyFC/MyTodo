@@ -1,0 +1,152 @@
+name: Build Windows packages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: mytodo-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install build SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore packages
+        run: dotnet restore src/MyTodo/MyTodo.csproj
+
+      - name: Publish portable Windows application
+        shell: pwsh
+        run: |
+          dotnet publish src/MyTodo/MyTodo.csproj `
+            --configuration Release `
+            --output publish/MyTodo-win-x86 `
+            -p:PlatformTarget=x86 `
+            -p:Prefer32Bit=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false
+
+      - name: Add usage note
+        shell: pwsh
+        run: Copy-Item README-PORTABLE.txt publish/MyTodo-win-x86/README.txt
+
+      - name: Smoke test and measure startup memory
+        shell: pwsh
+        run: |
+          $application = Resolve-Path "publish/MyTodo-win-x86/MyTodo.exe"
+          $dataDirectory = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "MyTodoData"
+          Remove-Item $dataDirectory -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item memory-report.txt -Force -ErrorAction SilentlyContinue
+
+          function Measure-MyTodo([string]$label) {
+            $process = Start-Process $application -PassThru
+            Start-Sleep -Seconds 6
+            if ($process.HasExited) {
+              throw "MyTodo exited during the $label smoke test."
+            }
+            $process.Refresh()
+            $workingSet = [math]::Round($process.WorkingSet64 / 1MB, 1)
+            $privateMemory = [math]::Round($process.PrivateMemorySize64 / 1MB, 1)
+            "$label working set: $workingSet MB" | Add-Content memory-report.txt
+            "$label private memory: $privateMemory MB" | Add-Content memory-report.txt
+            $memoryExceeded = $label -eq "No-background startup" -and $workingSet -gt 50
+            Stop-Process -Id $process.Id -Force
+            Start-Sleep -Seconds 1
+            if ($memoryExceeded) {
+              throw "No-background startup working set exceeded 50 MB: $workingSet MB."
+            }
+          }
+
+          Measure-MyTodo "No-background startup"
+
+          $backgroundDirectory = Join-Path $dataDirectory "Backgrounds"
+          New-Item $backgroundDirectory -ItemType Directory -Force | Out-Null
+          $backgroundPath = Join-Path $backgroundDirectory "background.jpg"
+          Add-Type -AssemblyName System.Drawing
+          $bitmap = New-Object System.Drawing.Bitmap 7680, 4320
+          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+          $graphics.Clear([System.Drawing.Color]::FromArgb(78, 138, 188))
+          $bitmap.Save($backgroundPath, [System.Drawing.Imaging.ImageFormat]::Jpeg)
+          $graphics.Dispose()
+          $bitmap.Dispose()
+
+          @{
+            ThemeColor = "#2563EB"
+            ThemeStyle = "mist"
+            MaskOpacity = 0.58
+            BackgroundImagePath = $backgroundPath
+            NavigationWidth = 212
+            TaskRowHeight = 58
+            DetailPanelWidth = 410
+            FontSize = 14
+            FontFamilyName = "system"
+            BackupDirectory = ""
+          } | ConvertTo-Json | Set-Content (Join-Path $dataDirectory "settings.json")
+
+          Measure-MyTodo "8K-background startup"
+          Measure-MyTodo "Optimized-background restart"
+          Get-Content memory-report.txt
+
+      - name: Create ZIP package
+        shell: pwsh
+        run: Compress-Archive -Path publish/MyTodo-win-x86/* -DestinationPath MyTodo-win-x86-portable.zip
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $compiler = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $compiler)) {
+            choco install innosetup --no-progress --yes
+          }
+          & $compiler installer.iss
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyTodo-1.0.0-windows
+          path: |
+            MyTodo-win-x86-portable.zip
+            installer-output/MyTodo-Setup.exe
+            memory-report.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create GitHub release
+        if: contains(github.event.head_commit.message, '[release]')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete v1.0.0 --cleanup-tag --yes 2>$null
+          gh release create v1.0.0 MyTodo-win-x86-portable.zip installer-output/MyTodo-Setup.exe `
+            --target "${{ github.sha }}" `
+            --title "MyTodo 1.0.0" `
+            --notes "MyTodo 1.0.0：提供安装版与免安装版；任务、计划及完整属性的计划节点统一自动保存；双击打开详情，右键执行置顶、插入或删除；节点支持拖动排序；回收站收纳于设置；快速输入按 Enter 直接创建；任务标题优先完整显示；应用内弹窗与右键菜单跟随主题；无背景空闲工作集构建门槛为 50 MB；支持备注链接双击打开、任务完成动画、未来日期规划、历史记录与本地备份。"
+
+      - name: Remove older workflow records
+        if: contains(github.event.head_commit.message, '[release]')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $currentRun = "${{ github.run_id }}"
+          $olderRuns = gh api --paginate "repos/${{ github.repository }}/actions/runs" --jq '.workflow_runs[].id'
+          foreach ($run in $olderRuns) {
+            if ([string]$run -ne $currentRun) {
+              gh api --method DELETE "repos/${{ github.repository }}/actions/runs/$run"
+            }
+          }

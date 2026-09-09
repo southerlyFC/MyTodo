@@ -1,0 +1,203 @@
+<Application x:Class="MyTodo.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <SolidColorBrush x:Key="AccentBrush" Color="#2563EB" />
+        <SolidColorBrush x:Key="AccentSoftBrush" Color="#DBEAFE" />
+        <SolidColorBrush x:Key="SidebarBrush" Color="#172B4D" />
+        <SolidColorBrush x:Key="ContentMaskBrush" Color="#94F7F9FC" />
+        <SolidColorBrush x:Key="PanelBrush" Color="#FFFDFDFD" />
+        <SolidColorBrush x:Key="ToolbarBrush" Color="#EFFFFFFF" />
+        <SolidColorBrush x:Key="CardBrush" Color="#F7FFFFFF" />
+        <SolidColorBrush x:Key="CompletedBrush" Color="#D9E5E7EB" />
+        <SolidColorBrush x:Key="TextBrush" Color="#172033" />
+        <SolidColorBrush x:Key="MutedBrush" Color="#667085" />
+        <SolidColorBrush x:Key="LineBrush" Color="#180F172A" />
+        <SolidColorBrush x:Key="SidebarTextBrush" Color="#E5EAF2" />
+        <SolidColorBrush x:Key="SidebarMutedBrush" Color="#AAB6C8" />
+        <SolidColorBrush x:Key="SidebarSearchBrush" Color="#20FFFFFF" />
+        <SolidColorBrush x:Key="SidebarHoverBrush" Color="#22FFFFFF" />
+        <SolidColorBrush x:Key="SidebarSelectionBrush" Color="#30FFFFFF" />
+        <SolidColorBrush x:Key="SidebarDividerBrush" Color="#24FFFFFF" />
+        <SolidColorBrush x:Key="ThemeDecorBrush" Color="#00000000" />
+        <SolidColorBrush x:Key="InputSurfaceBrush" Color="#F8FFFFFF" />
+        <SolidColorBrush x:Key="InputBorderBrush" Color="#CBD5E1" />
+        <CornerRadius x:Key="ButtonCornerRadius">3</CornerRadius>
+        <CornerRadius x:Key="NavCornerRadius">2</CornerRadius>
+        <CornerRadius x:Key="TaskCardCornerRadius">0</CornerRadius>
+        <CornerRadius x:Key="PlanCardCornerRadius">4</CornerRadius>
+        <CornerRadius x:Key="ToolbarCornerRadius">0</CornerRadius>
+        <CornerRadius x:Key="SearchCornerRadius">2</CornerRadius>
+        <CornerRadius x:Key="EditorCornerRadius">0</CornerRadius>
+        <Thickness x:Key="PageMargin">34,28,34,24</Thickness>
+        <Thickness x:Key="PageBodyMargin">0,33,0,0</Thickness>
+        <Thickness x:Key="PageToolbarMargin">0,33,0,10</Thickness>
+        <Thickness x:Key="TaskCardMargin">0</Thickness>
+        <Thickness x:Key="TaskCardBorderThickness">0,0,0,1</Thickness>
+        <sys:Double x:Key="TaskAccentWidth">0</sys:Double>
+        <sys:Double x:Key="PlanAccentWidth">0</sys:Double>
+
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="16,9" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="{DynamicResource ButtonCornerRadius}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="0.88" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="SoftButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Background" Value="#120F172A" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="Padding" Value="12,8" />
+        </Style>
+
+        <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource SoftButton}">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="9" />
+            <Setter Property="ToolTipService.ShowDuration" Value="4000" />
+        </Style>
+
+        <Style x:Key="NavButton" TargetType="Button">
+            <Setter Property="Height" Value="42" />
+            <Setter Property="Margin" Value="7,2" />
+            <Setter Property="Padding" Value="13,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource SidebarTextBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="NavBorder" Background="{TemplateBinding Background}"
+                                CornerRadius="{DynamicResource NavCornerRadius}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="NavBorder" Property="Background" Value="{DynamicResource SidebarHoverBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="9,7" />
+            <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="{DynamicResource InputSurfaceBrush}" />
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="7,5" />
+            <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+        </Style>
+
+        <Style TargetType="DatePicker">
+            <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+        </Style>
+
+        <!-- 右键菜单不使用系统默认的复古外观，颜色与圆角随当前主题变化。 -->
+        <Style TargetType="ContextMenu">
+            <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="5" />
+            <Setter Property="HasDropShadow" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{DynamicResource ButtonCornerRadius}"
+                                Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Margin" Value="0,1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="MenuItemBorder" Background="{TemplateBinding Background}"
+                                CornerRadius="{DynamicResource ButtonCornerRadius}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="MenuItemBorder" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Separator">
+            <Setter Property="Margin" Value="8,4" />
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Background" Value="{DynamicResource LineBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Border Height="1" Background="{TemplateBinding Background}" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ToolTip">
+            <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="9,6" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{DynamicResource ButtonCornerRadius}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Application.Resources>
+</Application>

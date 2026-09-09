@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>MyTodo</AssemblyName>
+    <RootNamespace>MyTodo</RootNamespace>
+    <ApplicationIcon>Assets\MyTodo.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Authors>southerlyFC</Authors>
+    <Description>轻量、本地优先并保留每日计划历史的 Windows 待办软件。</Description>
+    <LangVersion>latest</LangVersion>
+    <SatelliteResourceLanguages>zh-Hans</SatelliteResourceLanguages>
+    <PlatformTarget>x86</PlatformTarget>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\MyTodo.ico" />
+  </ItemGroup>
+</Project>

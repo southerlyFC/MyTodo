@@ -1,0 +1,891 @@
+<Window x:Class="MyTodo.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MyTodo" Height="760" Width="1180" MinHeight="640" MinWidth="940"
+        Icon="Assets/MyTodo.ico" WindowStartupLocation="CenterScreen"
+        Background="#E8ECF2" Loaded="Window_Loaded" Closing="Window_Closing" KeyDown="Window_KeyDown"
+        Deactivated="Window_Deactivated" StateChanged="Window_StateChanged">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="NavigationColumn" Width="212" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- 左侧导航只保留主要工作视图；低频工具集中到设置。 -->
+        <Border Grid.Column="0" Background="{DynamicResource SidebarBrush}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid Margin="18,22,14,19">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="34" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Image Source="Assets/MyTodo.ico" Width="28" Height="28" />
+                    <TextBlock Grid.Column="1" Margin="9,0,0,0" Text="MyTodo" Foreground="{DynamicResource SidebarTextBrush}"
+                               FontSize="19" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </Grid>
+
+                <Border Grid.Row="1" Margin="14,0,14,5" Background="{DynamicResource SidebarSearchBrush}"
+                        CornerRadius="{DynamicResource SearchCornerRadius}">
+                    <Grid>
+                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets"
+                                   Foreground="{DynamicResource SidebarMutedBrush}" Margin="12,0,0,0" Width="20"
+                                   HorizontalAlignment="Left" TextAlignment="Center"
+                                   VerticalAlignment="Center" IsHitTestVisible="False"
+                                   RenderTransformOrigin="0.5,0.5">
+                            <TextBlock.RenderTransform><ScaleTransform ScaleX="-1" /></TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBox x:Name="SearchBox" TextChanged="SearchBox_TextChanged"
+                                 Background="Transparent" BorderThickness="0" Foreground="{DynamicResource SidebarTextBrush}"
+                                 CaretBrush="{DynamicResource SidebarTextBrush}" Padding="34,8,9,8" ToolTip="搜索当前任务" />
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="2">
+                    <StackPanel VerticalAlignment="Top">
+                        <Button x:Name="TodayNav" Style="{StaticResource NavButton}" Tag="today" Click="Navigation_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Width="30" Text="☀" TextAlignment="Center" />
+                                <TextBlock Text="我的一天" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="PlanNav" Style="{StaticResource NavButton}" Tag="plans" Click="Navigation_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Width="30" Text="▤" TextAlignment="Center" />
+                                <TextBlock Text="计划" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="AllNav" Style="{StaticResource NavButton}" Tag="all" Click="Navigation_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Width="30" Text="☷" TextAlignment="Center" />
+                                <TextBlock Text="全部任务" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Bottom" Margin="0,0,0,8">
+                        <Border Height="1" Margin="16,0,16,8" Background="{DynamicResource SidebarDividerBrush}" />
+                        <Button x:Name="HistoryNav" Style="{StaticResource NavButton}" Tag="history" Click="Navigation_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Width="30" Text="◷" TextAlignment="Center" />
+                                <TextBlock Text="历史记录" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <Button Grid.Row="3" Width="48" Height="48" Margin="11,0,0,10" FontSize="18"
+                        HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                        Style="{StaticResource IconButton}" Background="Transparent"
+                        Foreground="{DynamicResource SidebarTextBrush}" Content="&#xE713;" ToolTip="设置"
+                        Click="OpenSettings_Click" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="1" ClipToBounds="True">
+            <Image x:Name="BackgroundImage" Stretch="UniformToFill" />
+            <Border Background="{DynamicResource ContentMaskBrush}">
+                <Grid>
+                    <!-- 普通任务视图：我的一天与全部任务共用。 -->
+                    <Grid x:Name="TaskView" Margin="{DynamicResource PageMargin}">
+                        <Grid.RowDefinitions>
+                            <!-- 所有主视图使用同一页头高度，确保正文顶线不会随副标题有无而跳动。 -->
+                            <RowDefinition Height="64" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock x:Name="ViewTitle" Text="我的一天" FontSize="30"
+                                           Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" />
+                                <TextBlock x:Name="ViewSubtitle" Foreground="{DynamicResource MutedBrush}"
+                                           Margin="1,4,0,0" />
+                            </StackPanel>
+                            <StackPanel x:Name="DaySelector" Grid.Column="1" Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+                                <Button Style="{StaticResource SoftButton}" Margin="0,0,8,0"
+                                        Content="今天" Click="SelectToday_Click" />
+                                <Button Style="{StaticResource SoftButton}" Margin="0,0,8,0"
+                                        Content="明天" Click="SelectTomorrow_Click" />
+                                <DatePicker x:Name="DayPicker" Width="150" Padding="7,5"
+                                            SelectedDateChanged="DayPicker_SelectedDateChanged" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Grid.Row="1" Margin="{DynamicResource PageToolbarMargin}" Background="{DynamicResource ToolbarBrush}"
+                                BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1"
+                                CornerRadius="{DynamicResource ToolbarCornerRadius}" Padding="5">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}"
+                                        Margin="7,0,0,0" Click="AddTask_Click" Content="添加任务" />
+                                <Button Width="42" Height="40" Padding="0" Margin="2,0,3,0"
+                                        Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                        Foreground="{DynamicResource AccentBrush}" FontSize="24"
+                                        Content="＋" ToolTip="新建并填写详情" Click="OpenNewTask_Click" />
+                                <TextBox x:Name="QuickAddBox" BorderThickness="0" Background="Transparent"
+                                         Padding="5,10" KeyDown="QuickAddBox_KeyDown"
+                                         ToolTip="输入标题，按 Enter 直接添加" />
+                            </DockPanel>
+                        </Border>
+
+                        <ListBox x:Name="TaskList" Grid.Row="2" Background="Transparent" BorderThickness="0"
+                                 ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True"
+                                 VirtualizingPanel.VirtualizationMode="Recycling">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{DynamicResource LineBrush}"
+                                            CornerRadius="{DynamicResource TaskCardCornerRadius}"
+                                            Margin="{DynamicResource TaskCardMargin}"
+                                            ToolTip="双击编辑任务"
+                                            MouseLeftButtonDown="TaskRow_MouseLeftButtonDown">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+                                                <Setter Property="BorderThickness" Value="{DynamicResource TaskCardBorderThickness}" />
+                                                <Setter Property="Padding" Value="12,8" />
+                                                <Setter Property="MinHeight" Value="{DynamicResource TaskRowHeight}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource CompletedBrush}" />
+                                                        <Setter Property="Opacity" Value="0.58" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsSeparator}" Value="True">
+                                                        <Setter Property="Background" Value="Transparent" />
+                                                        <Setter Property="Opacity" Value="1" />
+                                                        <Setter Property="MinHeight" Value="40" />
+                                                        <Setter Property="Padding" Value="0,12,0,5" />
+                                                        <Setter Property="BorderThickness" Value="0" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Border.ContextMenu>
+                                            <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                                <MenuItem Header="{Binding PinMenuText}" Click="TaskContextPin_Click" />
+                                                <Separator />
+                                                <MenuItem Header="删除" Click="TaskContextDelete_Click" />
+                                            </ContextMenu>
+                                        </Border.ContextMenu>
+                                        <Grid>
+                                        <Border x:Name="TaskThemeAccent" Width="{DynamicResource TaskAccentWidth}"
+                                                Background="{DynamicResource ThemeDecorBrush}"
+                                                HorizontalAlignment="Left" IsHitTestVisible="False" />
+                                        <Grid x:Name="TaskRowGrid" VerticalAlignment="Center">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="40" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="36" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button Width="25" Height="25" Padding="0" BorderThickness="1.4"
+                                                    BorderBrush="{DynamicResource AccentBrush}" Background="Transparent"
+                                                    Foreground="{DynamicResource AccentBrush}" FontWeight="Bold"
+                                                    VerticalAlignment="Center"
+                                                    PreviewMouseLeftButtonDown="TaskComplete_PreviewMouseLeftButtonDown">
+                                                <Grid Width="16" Height="16">
+                                                    <TextBlock Text="{Binding CompletionGlyph}" FontWeight="Bold"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    <Path Data="M 1,8 L 6,13 L 15,2" Stroke="{DynamicResource AccentBrush}"
+                                                          StrokeThickness="2.2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                          StrokeLineJoin="Round" StrokeDashArray="24,24" StrokeDashOffset="24"
+                                                          Opacity="0" Stretch="Uniform" />
+                                                </Grid>
+                                            </Button>
+                                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                                <DockPanel>
+                                                    <TextBlock DockPanel.Dock="Right" Text="{Binding PinnedGlyph}" Margin="8,0,0,0"
+                                                               Foreground="{DynamicResource AccentBrush}" FontSize="10" />
+                                                    <TextBlock Text="{Binding Title}" TextWrapping="Wrap">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                                        <Setter Property="Foreground" Value="#6B7280" />
+                                                                        <Setter Property="TextDecorations" Value="Strikethrough" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </DockPanel>
+                                                <Grid Grid.Row="1" Margin="0,3,8,0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding DetailText}" Foreground="{DynamicResource MutedBrush}"
+                                                               FontSize="11.5" />
+                                                    <TextBlock Grid.Column="1" Margin="14,0,0,0" Text="{Binding SummaryText}"
+                                                               Foreground="{DynamicResource MutedBrush}" FontSize="11.5"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                </Grid>
+                                            </Grid>
+                                            <TextBlock Grid.Column="2" Text="{Binding ImportantGlyph}"
+                                                       Foreground="{DynamicResource AccentBrush}" FontSize="18"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Grid>
+                                        <Grid x:Name="CompletedSeparatorGrid" Visibility="Collapsed">
+                                            <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                            <Border Height="1" Background="{DynamicResource LineBrush}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}" Margin="12,0"
+                                                       Foreground="{DynamicResource MutedBrush}" FontSize="12" />
+                                            <Border Grid.Column="2" Height="1" Background="{DynamicResource LineBrush}" VerticalAlignment="Center" />
+                                        </Grid>
+                                        </Grid>
+                                    </Border>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsSeparator}" Value="True">
+                                                <Setter TargetName="TaskRowGrid" Property="Visibility" Value="Collapsed" />
+                                                <Setter TargetName="CompletedSeparatorGrid" Property="Visibility" Value="Visible" />
+                                                <Setter TargetName="TaskThemeAccent" Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <StackPanel x:Name="DailyTipPanel" Grid.Row="3" Margin="3,8,0,6">
+                            <TextBlock Text="Tip" Foreground="{DynamicResource MutedBrush}" FontSize="12" />
+                            <Border Height="48" Margin="0,3,0,0"
+                                    Background="{DynamicResource InputSurfaceBrush}"
+                                    BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1"
+                                    CornerRadius="{DynamicResource EditorCornerRadius}">
+                                <TextBox x:Name="DailyTipBox" Background="Transparent" BorderThickness="0"
+                                         MaxLength="200" AcceptsReturn="True" TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto"
+                                         LostKeyboardFocus="DailyTipBox_LostKeyboardFocus" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock x:Name="StatusText" Grid.Row="4" Margin="3,4,0,0"
+                                   Foreground="{DynamicResource MutedBrush}" FontSize="12" />
+                    </Grid>
+
+                    <!-- 计划视图：三列按创建顺序排列，卡片高度由全部任务节点决定。 -->
+                    <Grid x:Name="PlanView" Margin="{DynamicResource PageMargin}" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="64" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <TextBlock Text="计划" FontSize="30" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}" />
+                            <Button HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    Style="{StaticResource PrimaryButton}" Content="＋ 新建计划"
+                                    Click="NewPlan_Click" />
+                        </Grid>
+                        <ScrollViewer x:Name="PlanScrollViewer" Grid.Row="1" Margin="{DynamicResource PageBodyMargin}"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      VerticalScrollBarVisibility="Auto">
+                            <Grid>
+                                <Grid.Resources>
+                                    <DataTemplate x:Key="PlanCardTemplate">
+                                        <Border Margin="0,0,0,14" Background="{DynamicResource CardBrush}" VerticalAlignment="Top"
+                                                BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                                                CornerRadius="{DynamicResource PlanCardCornerRadius}" Padding="17"
+                                                Cursor="Arrow" MouseLeftButtonDown="PlanCard_MouseLeftButtonDown">
+                                            <Border.ContextMenu>
+                                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                                    <MenuItem Header="{Binding PinMenuText}" Click="PlanContextPin_Click" />
+                                                    <Separator />
+                                                    <MenuItem Header="删除计划" Click="PlanContextDelete_Click" />
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
+                                            <Grid ToolTip="双击编辑计划">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <Border Width="{DynamicResource PlanAccentWidth}" Grid.RowSpan="5"
+                                                        Background="{DynamicResource ThemeDecorBrush}"
+                                                        HorizontalAlignment="Left" Margin="-17,-17,0,-17"
+                                                        IsHitTestVisible="False" />
+                                                <DockPanel>
+                                                    <TextBlock DockPanel.Dock="Right" Text="{Binding PinnedGlyph}"
+                                                               Foreground="{DynamicResource AccentBrush}" FontSize="10" Margin="8,2,0,0" />
+                                                    <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                </DockPanel>
+                                                <TextBlock Grid.Row="1" Text="{Binding Goal}" Margin="0,7,0,0"
+                                                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" />
+                                                <TextBlock Grid.Row="2" Text="{Binding DueDateText}" Margin="0,9,0,7"
+                                                           Foreground="{DynamicResource AccentBrush}" FontSize="12" />
+                                                <ItemsControl Grid.Row="3" ItemsSource="{Binding PreviewNodes, Mode=OneWay}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Height="24" ToolTip="双击编辑节点"
+                                                                  MouseLeftButtonDown="PlanPreviewNode_MouseLeftButtonDown">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="28" />
+                                                                    <ColumnDefinition Width="*" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <Button Width="18" Height="18" Padding="0"
+                                                                        BorderBrush="{DynamicResource AccentBrush}"
+                                                                        Background="Transparent" Foreground="{DynamicResource AccentBrush}"
+                                                                        PreviewMouseLeftButtonDown="PlanNodeComplete_PreviewMouseLeftButtonDown"
+                                                                        Cursor="Hand" VerticalAlignment="Center">
+                                                                    <Grid Width="13" Height="13">
+                                                                        <TextBlock Text="{Binding CompletionGlyph}" FontWeight="Bold"
+                                                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                                        <Path Data="M 1,7 L 5,11 L 12,2" Stroke="{DynamicResource AccentBrush}"
+                                                                              StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                                              StrokeLineJoin="Round" StrokeDashArray="20,20" StrokeDashOffset="20"
+                                                                              Opacity="0" Stretch="Uniform" />
+                                                                    </Grid>
+                                                                </Button>
+                                                                <TextBlock Grid.Column="1" Text="{Binding Title}" TextTrimming="CharacterEllipsis"
+                                                                           VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" />
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <Grid Grid.Row="4" Margin="0,12,0,0">
+                                                    <ProgressBar Height="4" VerticalAlignment="Bottom" Maximum="100"
+                                                                 Value="{Binding ProgressValue, Mode=OneWay}" />
+                                                    <TextBlock Text="{Binding ProgressText}" HorizontalAlignment="Right"
+                                                               Margin="0,0,0,8" Foreground="{DynamicResource MutedBrush}"
+                                                               FontSize="11" />
+                                                </Grid>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </Grid.Resources>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="14" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="14" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <ItemsControl x:Name="PlanColumnOne" Grid.Column="0"
+                                              ItemTemplate="{StaticResource PlanCardTemplate}" />
+                                <ItemsControl x:Name="PlanColumnTwo" Grid.Column="2"
+                                              ItemTemplate="{StaticResource PlanCardTemplate}" />
+                                <ItemsControl x:Name="PlanColumnThree" Grid.Column="4"
+                                              ItemTemplate="{StaticResource PlanCardTemplate}" />
+                            </Grid>
+                        </ScrollViewer>
+                    </Grid>
+
+                    <!-- 历史计划：每页25个日期格，点击日期后在底部查看当天任务。 -->
+                    <Grid x:Name="HistoryView" Margin="{DynamicResource PageMargin}" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="64" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="185" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <TextBlock Text="历史记录" FontSize="30" FontWeight="SemiBold" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Button Style="{StaticResource IconButton}" Content="&#xE76B;"
+                                        ToolTip="前25天" Click="PreviousMonth_Click" />
+                                <TextBlock x:Name="HistoryMonthText" Width="210" TextAlignment="Center"
+                                           VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold" />
+                                <Button x:Name="NextHistoryPageButton" Style="{StaticResource IconButton}"
+                                        Content="&#xE76C;" ToolTip="后25天" Click="NextMonth_Click" />
+                            </StackPanel>
+                        </Grid>
+                        <ItemsControl x:Name="HistoryCalendar" Grid.Row="1" Margin="{DynamicResource PageBodyMargin}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Columns="5" Rows="5" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Click="CalendarDay_Click" Background="{DynamicResource CardBrush}"
+                                            BorderBrush="{DynamicResource LineBrush}" BorderThickness="0.5"
+                                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                            Padding="10" Margin="2,0,2,4">
+                                        <Grid>
+                                            <TextBlock Text="{Binding DayText, Mode=OneWay}" FontWeight="SemiBold"
+                                                       HorizontalAlignment="Left" VerticalAlignment="Top" />
+                                            <TextBlock Text="{Binding SummaryText, Mode=OneWay}" FontSize="11"
+                                                       Foreground="{DynamicResource AccentBrush}"
+                                                       HorizontalAlignment="Left" VerticalAlignment="Bottom" />
+                                            <TextBlock Text="{Binding NoteSummary, Mode=OneWay}" FontSize="10"
+                                                       Foreground="{DynamicResource MutedBrush}"
+                                                       HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                       TextTrimming="CharacterEllipsis" MaxWidth="120" />
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Border Grid.Row="2" Margin="0,12,0,0" Background="{DynamicResource CardBrush}"
+                                BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" Padding="14">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <DockPanel>
+                                    <TextBlock x:Name="SelectedHistoryDateText" FontWeight="SemiBold" />
+                                    <TextBlock x:Name="HistorySummaryText" DockPanel.Dock="Right"
+                                               Foreground="{DynamicResource MutedBrush}" />
+                                </DockPanel>
+                                <TextBlock x:Name="HistoryTipText" Grid.Row="1" Margin="0,6,0,0"
+                                           Foreground="{DynamicResource MutedBrush}" TextTrimming="CharacterEllipsis" />
+                                <ListBox x:Name="HistoryTaskList" Grid.Row="2" Margin="0,8,0,0"
+                                         BorderThickness="0" Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,3">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="24" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="100" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding OutcomeText}" Grid.Column="2"
+                                                           Foreground="{DynamicResource MutedBrush}" />
+                                                <TextBlock Text="{Binding Title}" Grid.Column="1" />
+                                                <TextBlock Text="•" Foreground="{DynamicResource AccentBrush}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <Grid x:Name="RecycleView" Margin="{DynamicResource PageMargin}" Visibility="Collapsed">
+                        <Grid.RowDefinitions><RowDefinition Height="64" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                        <Grid>
+                            <TextBlock Text="回收站" FontSize="30" FontWeight="SemiBold" />
+                            <Button HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    Style="{StaticResource SoftButton}" Foreground="#C2413D"
+                                    Content="清空回收站" Click="EmptyRecycleBin_Click" />
+                        </Grid>
+                        <ListBox x:Name="RecycleList" Grid.Row="1" Margin="{DynamicResource PageBodyMargin}"
+                                 Background="Transparent" BorderThickness="0">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Margin" Value="0,0,0,6" />
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource LineBrush}"
+                                            BorderThickness="1" Padding="14" CornerRadius="{DynamicResource ButtonCornerRadius}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="70" /><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding TypeText}" Foreground="{DynamicResource AccentBrush}"
+                                                       VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding DetailText}" Foreground="{DynamicResource MutedBrush}"
+                                                           FontSize="11" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="12,0,0,0">
+                                                <Button Style="{StaticResource SoftButton}" Content="恢复" Click="RestoreRecycleItem_Click" />
+                                                <Button Style="{StaticResource SoftButton}" Foreground="#C2413D" Margin="7,0,0,0"
+                                                        Content="永久删除" Click="PermanentlyDeleteRecycleItem_Click" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <TextBlock x:Name="RecycleEmptyText" Grid.Row="1" Text="回收站为空"
+                                   Foreground="{DynamicResource MutedBrush}" FontSize="14"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Border x:Name="DrawerShade" Background="#30000000" Visibility="Collapsed"
+                    MouseLeftButtonDown="DrawerShade_MouseLeftButtonDown" />
+
+            <!-- 普通任务详情。关闭按钮固定为34×34正方形。 -->
+            <Border x:Name="TaskDrawer" Width="410" HorizontalAlignment="Right"
+                    Background="{DynamicResource PanelBrush}" BorderBrush="#22000000" BorderThickness="1,0,0,0"
+                    Visibility="Collapsed">
+                <Border.RenderTransform><TranslateTransform x:Name="TaskDrawerTransform" X="430" /></Border.RenderTransform>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="58" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Border BorderBrush="#16000000" BorderThickness="0,0,0,1">
+                        <DockPanel Margin="18,0,12,0">
+                            <Button DockPanel.Dock="Right" Width="34" Height="34" VerticalAlignment="Center"
+                                    Style="{StaticResource IconButton}" Padding="0" Content="&#xE8BB;"
+                                    ToolTip="关闭" Click="CloseTaskDrawer_Click" />
+                            <TextBlock Text="任务详情" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </DockPanel>
+                    </Border>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="20,17,20,14">
+                            <TextBlock Text="名称" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="TitleBox" Margin="0,5,0,14" TextChanged="EditorTextChanged" />
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="截止日期" Foreground="{DynamicResource MutedBrush}" />
+                                    <DatePicker x:Name="DueDatePicker" Margin="0,5,0,14"
+                                                SelectedDateChanged="EditorSelectionChanged" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="优先级" Foreground="{DynamicResource MutedBrush}" />
+                                    <ComboBox x:Name="PriorityBox" SelectedIndex="1" Margin="0,5,0,14"
+                                              SelectionChanged="EditorSelectionChanged">
+                                        <ComboBoxItem Content="低" /><ComboBoxItem Content="普通" /><ComboBoxItem Content="高" />
+                                    </ComboBox>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="备注" Foreground="{DynamicResource MutedBrush}" />
+                            <Border Height="260" Margin="0,5,0,8" Background="{DynamicResource InputSurfaceBrush}"
+                                    BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1"
+                                    CornerRadius="{DynamicResource EditorCornerRadius}">
+                                <RichTextBox x:Name="RequirementBox" Padding="9,7" Background="Transparent"
+                                             BorderThickness="0" IsDocumentEnabled="True"
+                                             VerticalScrollBarVisibility="Auto"
+                                             TextChanged="EditorTextChanged"
+                                             PreviewMouseDoubleClick="RequirementBox_PreviewMouseDoubleClick">
+                                    <RichTextBox.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="剪切" Command="ApplicationCommands.Cut" />
+                                            <MenuItem Header="复制" Command="ApplicationCommands.Copy" />
+                                            <MenuItem Header="粘贴" Command="ApplicationCommands.Paste" />
+                                            <Separator />
+                                            <MenuItem Header="将选中地址添加为超链接" Click="AddSelectedNoteHyperlink_Click" />
+                                        </ContextMenu>
+                                    </RichTextBox.ContextMenu>
+                                </RichTextBox>
+                            </Border>
+                            <WrapPanel Margin="0,0,0,6">
+                                <Button Style="{StaticResource SoftButton}" Content="插入文件" Click="ChooseAttachment_Click" />
+                                <Button Style="{StaticResource SoftButton}" Margin="6,0,0,0"
+                                        Content="插入文件夹" Click="ChooseFolderAttachment_Click" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <Border Grid.Row="2" BorderBrush="#16000000" BorderThickness="0,1,0,0" Padding="14">
+                        <Grid>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource PrimaryButton}" Content="保存任务" Click="SaveTask_Click" />
+                                <Button x:Name="TodayActionButton" Style="{StaticResource SoftButton}"
+                                        Margin="7,0,0,0" Content="加入我的一天" Click="TodayAction_Click" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button x:Name="CompleteButton" Style="{StaticResource IconButton}" Content="&#xE930;"
+                                        ToolTip="标记完成" Click="ToggleComplete_Click" />
+                                <Button Style="{StaticResource IconButton}" Margin="6,0,0,0" Content="&#xE74D;"
+                                        Foreground="#C2413D" ToolTip="移入回收站" Click="DeleteTask_Click" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- 计划详情及任务节点。 -->
+            <Border x:Name="PlanDrawer" Width="460" HorizontalAlignment="Right" Background="{DynamicResource PanelBrush}"
+                    BorderBrush="#22000000" BorderThickness="1,0,0,0" Visibility="Collapsed">
+                <Border.RenderTransform><TranslateTransform x:Name="PlanDrawerTransform" X="480" /></Border.RenderTransform>
+                <Grid>
+                    <!-- 计划本体。字段自动保存；按钮用于显式保存并关闭。 -->
+                    <Grid x:Name="PlanEditorRoot">
+                        <Grid.RowDefinitions><RowDefinition Height="58" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                        <Border BorderBrush="#16000000" BorderThickness="0,0,0,1">
+                            <DockPanel Margin="18,0,12,0">
+                                <Button DockPanel.Dock="Right" Width="34" Height="34" VerticalAlignment="Center"
+                                        Style="{StaticResource IconButton}" Padding="0" Content="&#xE8BB;"
+                                        Click="ClosePlanDrawer_Click" />
+                                <TextBlock Text="计划详情" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </Border>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="20,17,20,14">
+                                <TextBlock Text="计划名称" Foreground="{DynamicResource MutedBrush}" />
+                                <TextBox x:Name="PlanTitleBox" Margin="0,5,0,14" TextChanged="EditorTextChanged" />
+                                <TextBlock Text="截止日期" Foreground="{DynamicResource MutedBrush}" />
+                                <DatePicker x:Name="PlanDueDatePicker" Margin="0,5,0,14"
+                                            SelectedDateChanged="EditorSelectionChanged" />
+                                <TextBlock Text="目标说明" Foreground="{DynamicResource MutedBrush}" />
+                                <TextBox x:Name="PlanGoalBox" Height="95" Margin="0,5,0,18" AcceptsReturn="True"
+                                         TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" TextChanged="EditorTextChanged" />
+                                <TextBlock Text="任务节点" FontSize="15" FontWeight="SemiBold" />
+                                <DockPanel Margin="0,8,0,8">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Margin="6,0,0,0"
+                                            Content="添加" Click="AddPlanNode_Click" />
+                                    <TextBox x:Name="NewPlanNodeBox" KeyDown="NewPlanNodeBox_KeyDown" />
+                                </DockPanel>
+                                <ListBox x:Name="PlanNodeList" BorderThickness="0" Background="Transparent"
+                                         AllowDrop="True" DragOver="PlanNodeList_DragOver" Drop="PlanNodeList_Drop">
+                                    <ListBox.ItemContainerStyle>
+                                        <Style TargetType="ListBoxItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                            <Setter Property="Padding" Value="0" />
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Setter Property="BorderThickness" Value="0" />
+                                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="ListBoxItem">
+                                                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </ListBox.ItemContainerStyle>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1"
+                                                    Padding="4,8" Cursor="Arrow" ToolTip="双击编辑节点"
+                                                    MouseLeftButtonDown="PlanNodeRow_MouseLeftButtonDown">
+                                                <Border.ContextMenu>
+                                                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                                        <MenuItem Header="在此前插入节点" Click="InsertPlanNodeBefore_Click" />
+                                                        <Separator />
+                                                        <MenuItem Header="删除节点" Click="PlanNodeContextDelete_Click" />
+                                                    </ContextMenu>
+                                                </Border.ContextMenu>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="34" /><ColumnDefinition /><ColumnDefinition Width="34" /></Grid.ColumnDefinitions>
+                                                    <Button Width="24" Height="24" Padding="0" BorderBrush="{DynamicResource AccentBrush}"
+                                                            Background="Transparent" Foreground="{DynamicResource AccentBrush}"
+                                                            PreviewMouseLeftButtonDown="PlanNodeComplete_PreviewMouseLeftButtonDown">
+                                                        <Grid Width="16" Height="16">
+                                                            <TextBlock Text="{Binding CompletionGlyph}" FontWeight="Bold"
+                                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                            <Path Data="M 1,8 L 6,13 L 15,2" Stroke="{DynamicResource AccentBrush}"
+                                                                  StrokeThickness="2.2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                                                  StrokeLineJoin="Round" StrokeDashArray="24,24" StrokeDashOffset="24"
+                                                                  Opacity="0" Stretch="Uniform" />
+                                                        </Grid>
+                                                    </Button>
+                                                    <Grid Grid.Column="1" VerticalAlignment="Center">
+                                                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                                        <DockPanel>
+                                                            <TextBlock DockPanel.Dock="Right" Text="{Binding ImportantGlyph}"
+                                                                       Foreground="{DynamicResource AccentBrush}" Margin="6,0" />
+                                                            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                                        </DockPanel>
+                                                        <DockPanel Grid.Row="1">
+                                                            <TextBlock DockPanel.Dock="Right" Text="{Binding DueDateText}"
+                                                                       Foreground="{DynamicResource MutedBrush}" FontSize="11" Margin="8,0,0,0" />
+                                                            <TextBlock Text="{Binding NoteSummary}" Foreground="{DynamicResource MutedBrush}"
+                                                                       FontSize="11" TextTrimming="CharacterEllipsis" />
+                                                        </DockPanel>
+                                                    </Grid>
+                                                    <Border Grid.Column="2" Width="30" Height="30" Background="Transparent"
+                                                            Cursor="SizeAll" ToolTip="拖动调整节点顺序"
+                                                            PreviewMouseLeftButtonDown="PlanNodeDragHandle_PreviewMouseLeftButtonDown"
+                                                            PreviewMouseMove="PlanNodeDragHandle_PreviewMouseMove"
+                                                            PreviewMouseLeftButtonUp="PlanNodeDragHandle_PreviewMouseLeftButtonUp">
+                                                        <TextBlock Text="&#xE700;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                                                   Foreground="{DynamicResource MutedBrush}"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Border>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </StackPanel>
+                        </ScrollViewer>
+                        <Border Grid.Row="2" BorderBrush="#16000000" BorderThickness="0,1,0,0" Padding="14">
+                            <Grid>
+                                <Button HorizontalAlignment="Left" Style="{StaticResource PrimaryButton}"
+                                        Content="保存计划" Click="SavePlan_Click" />
+                                <Button HorizontalAlignment="Right" Style="{StaticResource SoftButton}"
+                                        Foreground="#C2413D" Content="删除计划" Click="DeletePlan_Click" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <!-- 节点是计划内的完整任务，进入独立详情页编辑。 -->
+                    <Grid x:Name="PlanNodeEditor" Background="{DynamicResource PanelBrush}" Visibility="Collapsed"
+                          Panel.ZIndex="2">
+                        <Grid.RowDefinitions><RowDefinition Height="58" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                        <Border BorderBrush="#16000000" BorderThickness="0,0,0,1">
+                            <Grid Margin="12,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="42" /><ColumnDefinition /><ColumnDefinition Width="42" /></Grid.ColumnDefinitions>
+                                <Button Width="34" Height="34" VerticalAlignment="Center" Style="{StaticResource IconButton}"
+                                        Padding="0" Content="&#xE72B;" ToolTip="返回计划"
+                                        Click="ClosePlanNodeEditor_Click" />
+                                <TextBlock Grid.Column="1" Text="节点详情" FontSize="18" FontWeight="SemiBold"
+                                           VerticalAlignment="Center" Margin="7,0,0,0" />
+                                <Button Grid.Column="2" Width="34" Height="34" VerticalAlignment="Center"
+                                        Style="{StaticResource IconButton}" Padding="0" Content="&#xE8BB;"
+                                        ToolTip="关闭" Click="ClosePlanDrawer_Click" />
+                            </Grid>
+                        </Border>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="20,17,20,18">
+                                <TextBlock Text="名称" Foreground="{DynamicResource MutedBrush}" />
+                                <TextBox x:Name="PlanNodeEditorTitle" Margin="0,5,0,14"
+                                         TextChanged="EditorTextChanged" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="12" /><ColumnDefinition /></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="截止日期" Foreground="{DynamicResource MutedBrush}" />
+                                        <DatePicker x:Name="PlanNodeDueDatePicker" Margin="0,5,0,14"
+                                                    SelectedDateChanged="EditorSelectionChanged" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="优先级" Foreground="{DynamicResource MutedBrush}" />
+                                        <ComboBox x:Name="PlanNodePriorityBox" SelectedIndex="1" Margin="0,5,0,14"
+                                                  SelectionChanged="EditorSelectionChanged">
+                                            <ComboBoxItem Content="低" /><ComboBoxItem Content="普通" /><ComboBoxItem Content="高" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Text="备注" Foreground="{DynamicResource MutedBrush}" />
+                                <Border Height="290" Margin="0,5,0,9" Background="{DynamicResource InputSurfaceBrush}"
+                                        BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1"
+                                        CornerRadius="{DynamicResource EditorCornerRadius}">
+                                    <RichTextBox x:Name="PlanNodeNoteBox" Padding="9,7" Background="Transparent"
+                                                 BorderThickness="0" AcceptsReturn="True"
+                                                 VerticalScrollBarVisibility="Auto" TextChanged="EditorTextChanged"
+                                                 PreviewMouseDoubleClick="PlanNodeNoteBox_PreviewMouseDoubleClick">
+                                        <RichTextBox.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="剪切" Command="ApplicationCommands.Cut" />
+                                                <MenuItem Header="复制" Command="ApplicationCommands.Copy" />
+                                                <MenuItem Header="粘贴" Command="ApplicationCommands.Paste" />
+                                                <Separator />
+                                                <MenuItem Header="将选中地址添加为超链接" Click="AddSelectedPlanNodeHyperlink_Click" />
+                                                <Separator />
+                                                <MenuItem Header="插入文件地址" Click="ChoosePlanNodeFile_Click" />
+                                                <MenuItem Header="插入文件夹地址" Click="ChoosePlanNodeFolder_Click" />
+                                            </ContextMenu>
+                                        </RichTextBox.ContextMenu>
+                                    </RichTextBox>
+                                </Border>
+                                <WrapPanel>
+                                    <Button Style="{StaticResource SoftButton}" Content="插入文件" Click="ChoosePlanNodeFile_Click" />
+                                    <Button Style="{StaticResource SoftButton}" Margin="7,0,0,0"
+                                            Content="插入文件夹" Click="ChoosePlanNodeFolder_Click" />
+                                </WrapPanel>
+                                <TextBlock x:Name="PlanNodeAutoSaveText" Text="自动保存" Margin="1,12,0,0"
+                                           Foreground="{DynamicResource MutedBrush}" FontSize="11" />
+                            </StackPanel>
+                        </ScrollViewer>
+                        <Border Grid.Row="2" BorderBrush="#16000000" BorderThickness="0,1,0,0" Padding="14">
+                            <Button HorizontalAlignment="Left" Style="{StaticResource PrimaryButton}"
+                                    Content="完成" Click="ClosePlanNodeEditor_Click" />
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- 集中设置。 -->
+            <Border x:Name="SettingsPanel" Width="420" HorizontalAlignment="Right" Background="{DynamicResource PanelBrush}"
+                    BorderBrush="#22000000" BorderThickness="1,0,0,0" Visibility="Collapsed">
+                <Grid>
+                    <Grid.RowDefinitions><RowDefinition Height="58" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                    <Border BorderBrush="#16000000" BorderThickness="0,0,0,1">
+                        <DockPanel Margin="18,0,12,0">
+                            <Button DockPanel.Dock="Right" Width="34" Height="34" VerticalAlignment="Center"
+                                    Style="{StaticResource IconButton}" Padding="0" Content="&#xE8BB;"
+                                    Click="CloseSettings_Click" />
+                            <TextBlock Text="设置" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </DockPanel>
+                    </Border>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="20,16,20,28">
+                            <TextBlock Text="外观" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="背景图片" Foreground="{DynamicResource MutedBrush}" Margin="0,14,0,6" />
+                            <WrapPanel>
+                                <Button Style="{StaticResource PrimaryButton}" Content="选择图片" Click="ChooseBackground_Click" />
+                                <Button Style="{StaticResource SoftButton}" Margin="7,0,0,0" Content="移除" Click="RemoveBackground_Click" />
+                            </WrapPanel>
+                            <TextBlock x:Name="BackgroundStatusText" Text="未设置背景" FontSize="11"
+                                       Foreground="{DynamicResource MutedBrush}" TextTrimming="CharacterEllipsis" Margin="0,7,0,0" />
+                            <TextBlock Text="主题色" Foreground="{DynamicResource MutedBrush}" Margin="0,16,0,6" />
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Margin="7,0,0,0"
+                                        Content="应用" Click="ApplyTheme_Click" />
+                                <TextBox x:Name="ThemeColorBox" />
+                            </DockPanel>
+                            <WrapPanel Margin="0,9,0,0">
+                                <Button Width="30" Height="24" Margin="0,0,7,0" Background="#2563EB" BorderThickness="0" Tag="#2563EB" Click="ThemePreset_Click" />
+                                <Button Width="30" Height="24" Margin="0,0,7,0" Background="#0078D4" BorderThickness="0" Tag="#0078D4" Click="ThemePreset_Click" />
+                                <Button Width="30" Height="24" Margin="0,0,7,0" Background="#0F8A72" BorderThickness="0" Tag="#0F8A72" Click="ThemePreset_Click" />
+                                <Button Width="30" Height="24" Margin="0,0,7,0" Background="#0891B2" BorderThickness="0" Tag="#0891B2" Click="ThemePreset_Click" />
+                                <Button Width="30" Height="24" Background="#475569" BorderThickness="0" Tag="#475569" Click="ThemePreset_Click" />
+                            </WrapPanel>
+                            <WrapPanel x:Name="MacColorPresetPanel" Margin="0,8,0,0" Visibility="Collapsed">
+                                <Button Width="30" Height="24" Margin="0,0,7,0" Background="#0A84FF" BorderThickness="0" Tag="#0A84FF" ToolTip="Mac 蓝" Click="ThemePreset_Click" />
+                                <Button Width="30" Height="24" Margin="0,0,7,0" Background="#30D158" BorderThickness="0" Tag="#30D158" ToolTip="Mac 绿" Click="ThemePreset_Click" />
+                                <Button Width="30" Height="24" Background="#64D2FF" BorderThickness="0" Tag="#64D2FF" ToolTip="Mac 青" Click="ThemePreset_Click" />
+                            </WrapPanel>
+                            <TextBlock Text="主题样式" Foreground="{DynamicResource MutedBrush}" Margin="0,16,0,6" />
+                            <ComboBox x:Name="ThemeStyleBox" SelectionChanged="ThemeStyleBox_SelectionChanged">
+                                <ComboBoxItem Content="雾灰" Tag="mist" />
+                                <ComboBoxItem Content="Mac" Tag="mac" />
+                                <ComboBoxItem Content="清新" Tag="fresh" />
+                            </ComboBox>
+                            <TextBlock Text="界面字体" Foreground="{DynamicResource MutedBrush}" Margin="0,16,0,6" />
+                            <ComboBox x:Name="FontFamilyBox" SelectionChanged="FontFamilyBox_SelectionChanged">
+                                <ComboBoxItem Content="系统默认" Tag="system" />
+                                <ComboBoxItem Content="微软雅黑" Tag="yahei" />
+                                <ComboBoxItem Content="等线" Tag="dengxian" />
+                            </ComboBox>
+                            <DockPanel Margin="0,16,0,4">
+                                <TextBlock Text="背景蒙版" Foreground="{DynamicResource MutedBrush}" />
+                                <TextBlock x:Name="MaskValueText" HorizontalAlignment="Right" />
+                            </DockPanel>
+                            <Slider x:Name="MaskSlider" Minimum="0.10" Maximum="0.90" TickFrequency="0.05"
+                                    IsSnapToTickEnabled="True" ValueChanged="MaskSlider_ValueChanged" />
+
+                            <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,22" />
+                            <TextBlock Text="显示尺寸" FontSize="16" FontWeight="SemiBold" />
+                            <DockPanel Margin="0,14,0,3"><TextBlock Text="字体大小" Foreground="{DynamicResource MutedBrush}" /><TextBlock x:Name="FontSizeText" HorizontalAlignment="Right" /></DockPanel>
+                            <Slider x:Name="FontSizeSlider" Minimum="12" Maximum="19" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="LayoutSlider_ValueChanged" />
+                            <DockPanel Margin="0,13,0,3"><TextBlock Text="导航栏宽度" Foreground="{DynamicResource MutedBrush}" /><TextBlock x:Name="NavigationWidthText" HorizontalAlignment="Right" /></DockPanel>
+                            <Slider x:Name="NavigationWidthSlider" Minimum="180" Maximum="280" TickFrequency="4" IsSnapToTickEnabled="True" ValueChanged="LayoutSlider_ValueChanged" />
+                            <DockPanel Margin="0,13,0,3"><TextBlock Text="任务行高度" Foreground="{DynamicResource MutedBrush}" /><TextBlock x:Name="TaskRowHeightText" HorizontalAlignment="Right" /></DockPanel>
+                            <Slider x:Name="TaskRowHeightSlider" Minimum="46" Maximum="80" TickFrequency="2" IsSnapToTickEnabled="True" ValueChanged="LayoutSlider_ValueChanged" />
+                            <DockPanel Margin="0,13,0,3"><TextBlock Text="详情面板宽度" Foreground="{DynamicResource MutedBrush}" /><TextBlock x:Name="DetailWidthText" HorizontalAlignment="Right" /></DockPanel>
+                            <Slider x:Name="DetailWidthSlider" Minimum="350" Maximum="560" TickFrequency="10" IsSnapToTickEnabled="True" ValueChanged="LayoutSlider_ValueChanged" />
+
+                            <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,22" />
+                            <TextBlock Text="数据与备份" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="备份文件夹" Foreground="{DynamicResource MutedBrush}" Margin="0,14,0,6" />
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource SoftButton}" Margin="7,0,0,0"
+                                        Content="选择" Click="ChooseBackupDirectory_Click" />
+                                <TextBox x:Name="BackupDirectoryBox" IsReadOnly="True" />
+                            </DockPanel>
+                            <WrapPanel Margin="0,10,0,0">
+                                <Button Style="{StaticResource PrimaryButton}" Content="立即备份" Click="Backup_Click" />
+                                <Button Style="{StaticResource SoftButton}" Margin="7,0,0,0" Content="打开数据目录" Click="OpenDataDirectory_Click" />
+                            </WrapPanel>
+                            <Button Style="{StaticResource SoftButton}" Margin="0,12,0,0"
+                                    HorizontalContentAlignment="Left" Content="回收站" Click="OpenRecycleBinFromSettings_Click" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
