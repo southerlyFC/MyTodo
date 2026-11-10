@@ -457,7 +457,7 @@ public sealed class MainWindow : Window
         _page.Children.Add(import);
         _page.Children.Add(Button("打开数据目录", () => NoteEditor.Open(_data.DataDirectory)));
         _page.Children.Add(Button("回收站", () => Navigate("回收站")));
-        _page.Children.Add(new TextBlock { Text = "1.1.0-preview.1 · Linux", Opacity = .5 });
+        _page.Children.Add(new TextBlock { Text = "1.1.0-preview.2 · Linux", Opacity = .5 });
     }
     private static readonly AvaloniaProperty RangeBaseValue = Avalonia.Controls.Primitives.RangeBase.ValueProperty;
     private void ApplyTheme()

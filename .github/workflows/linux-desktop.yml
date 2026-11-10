@@ -36,11 +36,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag=v1.1.0-linux-preview.1
+          tag=v1.1.0-linux-preview.2
           if gh release view "$tag" >/dev/null 2>&1; then
             echo 'Preview tag already exists; leaving existing release unchanged.'
             exit 0
           fi
           gh release create "$tag" artifacts/linux/*.deb artifacts/linux/*.tar.gz artifacts/linux/SHA256SUMS \
             --target "$GITHUB_SHA" --prerelease --latest=false \
-            --title 'MyTodo Linux 1.1.0 Preview 1' --notes-file docs/linux-usage.md
+            --title 'MyTodo Linux 1.1.0 Preview 2' --notes-file docs/linux-usage.md

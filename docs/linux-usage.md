@@ -1,4 +1,4 @@
-# MyTodo Linux Preview 1
+# MyTodo Linux Preview 2
 
 本版本为 Linux 迁移预览版，不是 Windows v1.0.0 的完整等价正式版。首次使用请导入数据库副本，保留原始 Windows 数据。
 
@@ -7,7 +7,7 @@
 目标：Ubuntu 26.04.1 x86_64。deb 包包含 .NET 运行时，无需另装 SDK：
 
 ```sh
-sudo apt install ./MyTodo_1.1.0~preview.1_amd64.deb
+sudo apt install ./MyTodo_1.1.0.preview.2_amd64.deb
 ```
 
 安装后从应用菜单启动 MyTodo。免安装包解压后执行 `./MyTodo`，不要用 sudo 运行应用。
