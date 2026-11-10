@@ -1,0 +1,19 @@
+name: Linux data compatibility
+on:
+  push:
+    branches: [linux-port]
+  pull_request:
+    paths: ["src/MyTodo.Core/**", "src/MyTodo/DataService.cs", "src/MyTodo/Models.cs", "tests/**", ".github/workflows/linux-core.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  data-compatibility:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Verify shared database on Linux
+        run: dotnet run --project tests/MyTodo.Core.Smoke -c Release

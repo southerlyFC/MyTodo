@@ -14,11 +14,18 @@ public sealed class DataService
     public string AttachmentDirectory { get; }
     public string BackupDirectory { get; }
 
-    public DataService()
+    public DataService() : this(Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "MyTodoData"))
     {
-        DataDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            "MyTodoData");
+    }
+
+    // A caller-supplied directory keeps the storage engine independent of desktop APIs.
+    // The Windows entry point retains its original data location.
+    public DataService(string dataDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(dataDirectory))
+            throw new ArgumentException("Data directory must not be empty.", nameof(dataDirectory));
+        DataDirectory = Path.GetFullPath(dataDirectory);
         AttachmentDirectory = Path.Combine(DataDirectory, "Attachments-1.0");
         BackupDirectory = Path.Combine(DataDirectory, "Backups");
 
