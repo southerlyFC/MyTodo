@@ -4,7 +4,7 @@
 
 ## 当前状态
 
-迁移开发中，尚无可供使用的 Linux 桌面发行版。不得将数据层构建产物标作完整应用。
+迁移开发中，已实现 Linux 桌面预览应用与 deb/免安装包构建。运行与已知差异见 [linux-usage.md](linux-usage.md)。尚未达到 Windows v1.0.0 完整功能与视觉等价的正式发行标准。
 
 数据层使用同一份 `Models.cs`、`DataService.cs` 和 SQLite 表结构，不维护第二套数据库实现。Windows 默认目录不变；Linux 使用 `$XDG_DATA_HOME/mytodo`，未设置时使用 `~/.local/share/mytodo`。测试数据使用独立临时目录。
 
@@ -26,4 +26,13 @@
 dotnet run --project tests/MyTodo.Core.Smoke -c Release
 ```
 
-测试覆盖明日任务、完成历史、置顶、计划节点属性/插入/排序、回收站及备份恢复。数据库格式兼容不意味着 Windows 富文本 UI 或附件路径已经兼容；这些属于桌面迁移验收项目。
+测试覆盖明日任务、完成历史、置顶、计划节点属性/插入/排序、回收站、备份恢复、有效数据库导入及无效导入保护。数据库格式兼容不意味着 Windows 富文本 UI 或附件路径已经兼容；这些属于桌面迁移验收项目。
+
+桌面构建与无显示自动保存测试：
+
+```sh
+dotnet run --project src/MyTodo.Linux -c Release -p:EnableHeadless=true -- --smoke-test
+bash packaging/linux/build.sh
+```
+
+安装包不携带无显示测试框架。Windows v1.0.0 的 main、标签、安装包保持不变。预览版由独立 Linux 工作流发布，不调用旧 Windows 发布脚本。

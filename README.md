@@ -1,5 +1,11 @@
 # MyTodo
 
+## Linux 迁移预览
+
+`linux-port` 分支包含 Avalonia Linux 桌面预览版，目标为 Ubuntu 26.04.1 x86_64。下载 [Linux 预览发行版](https://github.com/southerlyFC/MyTodo/releases/tag/v1.1.0-linux-preview.1)，安装与已知差异见 [Linux 使用说明](docs/linux-usage.md)。预览版尚不代表 Windows 功能和视觉完全等价，首次导入请使用数据库副本。
+
+Windows v1.0.0 的主分支、标签与安装包保持不变。以下功能说明针对 Windows 稳定版；Linux 已完成与待验证范围以 Linux 使用说明为准。
+
 MyTodo 是一款轻量、本地优先的 Windows 待办应用。它把当天执行、长期规划与历史回顾分开，同时让任务、计划和计划节点保持清晰一致的编辑体验。
 
 ## 功能

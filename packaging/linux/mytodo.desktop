@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=MyTodo
+Comment=Local tasks and plans
+Exec=/opt/mytodo/MyTodo
+Icon=mytodo
+Terminal=false
+Categories=Office;Utility;
+StartupWMClass=MyTodo

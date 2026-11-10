@@ -1,0 +1,11 @@
+Package: mytodo
+Version: 1.1.0~preview.1
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: southerlyFC <southerlyFC@users.noreply.github.com>
+Depends: libc6 (>= 2.35), libfontconfig1, libx11-6, libice6, libsm6, libxext6, libxrender1, libxi6, libglib2.0-0t64 | libglib2.0-0, libssl3t64 | libssl3, libicu80 | libicu79 | libicu78 | libicu77 | libicu76 | libicu74 | libicu72, xdg-utils
+Recommends: fonts-noto-cjk
+Description: Local-first tasks and plans (Linux preview)
+ Native desktop preview with SQLite storage, daily planning, plan nodes,
+ history, notes and recycle bin. Includes the .NET runtime.

@@ -47,6 +47,13 @@ try
     var imported = new DataService(importedDirectory);
     Check(imported.GetAllTasks().Single().Title == task.Title, "Backup round trip lost task");
     Check(imported.GetPlans().Single().Nodes.Count == 2, "Backup round trip lost nodes");
+    DatabaseTransfer.Import(backup, importedDirectory);
+    Check(new DataService(importedDirectory).GetAllTasks().Single().Title == task.Title, "Validated import failed");
+    var invalid = Path.Combine(directory, "invalid.db");
+    File.WriteAllText(invalid, "not a sqlite database");
+    try { DatabaseTransfer.Import(invalid, importedDirectory); throw new InvalidOperationException("Invalid import accepted"); }
+    catch (Microsoft.Data.Sqlite.SqliteException) { }
+    Check(new DataService(importedDirectory).GetPlans().Single().Nodes.Count == 2, "Failed import damaged data");
     data.DeleteTask(task.Id);
     data.PermanentlyDeleteRecycleItem("task", task.Id);
     Check(!data.GetRecycleItems().Any(x => x.Id == task.Id), "Permanent deletion failed");

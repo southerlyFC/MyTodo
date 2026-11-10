@@ -1,0 +1,46 @@
+name: Linux desktop preview
+on:
+  push:
+    branches: [linux-port]
+    paths: ["src/**", "tests/**", "packaging/**", "docs/linux-usage.md", ".github/workflows/linux-desktop.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Data compatibility tests
+        run: dotnet run --project tests/MyTodo.Core.Smoke -c Release
+      - name: Headless desktop and autosave tests
+        run: dotnet run --project src/MyTodo.Linux -c Release -p:EnableHeadless=true -- --smoke-test
+      - name: Build self-contained packages
+        run: bash packaging/linux/build.sh
+      - name: Verify package metadata
+        run: |
+          dpkg-deb --info artifacts/linux/*.deb
+          test -x artifacts/linux/portable/MyTodo
+          test ! -f artifacts/linux/portable/Avalonia.Headless.dll
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MyTodo-Linux-preview
+          path: |
+            artifacts/linux/*.deb
+            artifacts/linux/*.tar.gz
+            artifacts/linux/SHA256SUMS
+      - name: Publish preview without modifying Windows releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=v1.1.0-linux-preview.1
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo 'Preview tag already exists; leaving existing release unchanged.'
+            exit 0
+          fi
+          gh release create "$tag" artifacts/linux/*.deb artifacts/linux/*.tar.gz artifacts/linux/SHA256SUMS \
+            --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title 'MyTodo Linux 1.1.0 Preview 1' --notes-file docs/linux-usage.md

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>MyTodo</AssemblyName>
+    <Version>1.1.0-preview.1</Version>
+    <EnableHeadless Condition="'$(EnableHeadless)' == ''">false</EnableHeadless>
+    <DefineConstants Condition="'$(EnableHeadless)' == 'true'">$(DefineConstants);HEADLESS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MyTodo.Core/MyTodo.Core.csproj" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.23" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.23" />
+    <PackageReference Include="Avalonia.Headless" Version="11.3.23" Condition="'$(EnableHeadless)' == 'true'" />
+    <AvaloniaResource Include="../MyTodo/Assets/MyTodo.ico" Link="Assets/MyTodo.ico" />
+  </ItemGroup>
+</Project>
